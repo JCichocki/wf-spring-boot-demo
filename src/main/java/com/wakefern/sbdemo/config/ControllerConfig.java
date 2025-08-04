@@ -1,4 +1,4 @@
-package com.wakefern.sb_demo.config;
+package com.wakefern.sbdemo.config;
 
 import org.springframework.beans.propertyeditors.StringTrimmerEditor;
 import org.springframework.web.bind.WebDataBinder;

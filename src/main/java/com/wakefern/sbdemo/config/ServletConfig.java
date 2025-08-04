@@ -1,4 +1,4 @@
-package com.wakefern.sb_demo.config;
+package com.wakefern.sbdemo.config;
 
 import jakarta.servlet.SessionTrackingMode;
 import java.util.Set;

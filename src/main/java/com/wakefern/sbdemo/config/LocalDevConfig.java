@@ -1,4 +1,4 @@
-package com.wakefern.sb_demo.config;
+package com.wakefern.sbdemo.config;
 
 import java.io.File;
 import lombok.SneakyThrows;

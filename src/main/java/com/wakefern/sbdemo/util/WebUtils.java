@@ -1,4 +1,4 @@
-package com.wakefern.sb_demo.util;
+package com.wakefern.sbdemo.util;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.context.MessageSource;

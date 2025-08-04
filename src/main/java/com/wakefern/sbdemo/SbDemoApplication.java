@@ -1,4 +1,4 @@
-package com.wakefern.sb_demo;
+package com.wakefern.sbdemo;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

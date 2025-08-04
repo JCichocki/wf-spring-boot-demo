@@ -1,4 +1,4 @@
-package com.wakefern.sb_demo.config;
+package com.wakefern.sbdemo.config;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.SerializationFeature;

@@ -1,4 +1,4 @@
-package com.wakefern.sb_demo.controller;
+package com.wakefern.sbdemo.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
