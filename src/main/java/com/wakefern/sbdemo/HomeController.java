@@ -1,4 +1,4 @@
-package com.wakefern.sbdemo.controller;
+package com.wakefern.sbdemo;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;

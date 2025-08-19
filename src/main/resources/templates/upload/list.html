@@ -1,0 +1,46 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+        layout:decorate="~{layout}">
+    <head>
+        <title>[[#{upload.list.headline}]]</title>
+    </head>
+    <body>
+        <div layout:fragment="content">
+            <div class="d-flex flex-wrap mb-4">
+                <h1 class="flex-grow-1">[[#{upload.list.headline}]]</h1>
+                <div>
+                    <a th:href="@{/uploads/add}" class="btn btn-primary ms-2">[[#{upload.list.createNew}]]</a>
+                </div>
+            </div>
+            <div th:if="${uploads.empty}">[[#{upload.list.empty}]]</div>
+            <div th:if="${!uploads.empty}" class="table-responsive">
+                <table class="table table-striped table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th scope="col">[[#{upload.id.label}]]</th>
+                            <th scope="col">[[#{upload.name.label}]]</th>
+                            <th scope="col">[[#{upload.status.label}]]</th>
+                            <th><!-- --></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="upload : ${uploads}">
+                            <td>[[${upload.id}]]</td>
+                            <td>[[${upload.name}]]</td>
+                            <td>[[${upload.status}]]</td>
+                            <td>
+                                <div class="float-end text-nowrap">
+                                    <a th:href="@{/uploads/edit/{id}(id=${upload.id})}" class="btn btn-sm btn-secondary">[[#{upload.list.edit}]]</a>
+                                    <form th:action="@{/uploads/delete/{id}(id=${upload.id})}"
+                                            th:hx-confirm="#{delete.confirm}" method="post" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-secondary">[[#{upload.list.delete}]]</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </body>
+</html>
