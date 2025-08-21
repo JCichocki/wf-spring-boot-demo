@@ -1,0 +1,111 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: sb-demo-kubernetes
+  annotations:
+    config.kubernetes.io/local-config: "true"
+    platform.kubernetes.io/target: "kubernetes"
+
+# Base resources
+resources:
+  - ../../base
+  - hpa.yaml
+  - pdb.yaml
+  - monitoring.yaml
+
+# Kubernetes-specific labels
+commonLabels:
+  platform: kubernetes
+
+# Kubernetes-specific annotations
+commonAnnotations:
+  kubernetes.io/managed-by: "kustomize"
+
+# Override namespace
+namespace: sb-demo
+
+# ConfigMap generator for Kubernetes-specific config
+configMapGenerator:
+  - name: sb-demo-kubernetes-config
+    literals:
+      - PLATFORM=kubernetes
+      - INGRESS_CLASS=nginx
+      - METRICS_ENABLED=true
+      - MONITORING_ENABLED=true
+    options:
+      disableNameSuffixHash: true
+
+# Patches for Kubernetes-specific configurations
+patches:
+  # Enable stricter security contexts for vanilla Kubernetes
+  - target:
+      kind: Deployment
+      name: sb-demo
+    patch: |-
+      - op: add
+        path: /spec/template/spec/securityContext/runAsNonRoot
+        value: true
+      - op: add
+        path: /spec/template/spec/securityContext/runAsUser
+        value: 1001
+      - op: add
+        path: /spec/template/spec/securityContext/runAsGroup
+        value: 1001
+      - op: add
+        path: /spec/template/spec/securityContext/fsGroup
+        value: 1001
+
+  # Add Kubernetes-specific storage class
+  - target:
+      kind: PersistentVolumeClaim
+    patch: |-
+      - op: replace
+        path: /spec/storageClassName
+        value: "standard"
+
+  # Configure Ingress for external access
+  - target:
+      kind: Ingress
+      name: sb-demo
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: "sb-demo.k8s.local"
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: "sb-demo.k8s.local"
+
+# Replacements for Kubernetes-specific values
+replacements:
+  - source:
+      kind: ConfigMap
+      name: sb-demo-kubernetes-config
+      fieldPath: data.PLATFORM
+    targets:
+      - select:
+          kind: Deployment
+          name: sb-demo
+        fieldPaths:
+          - spec.template.metadata.annotations.[platform.kubernetes.io/target]
+
+# Strategic merge patches
+patchesStrategicMerge: []
+
+# JSON patches
+patchesJson6902: []
+
+# Image transformations
+images:
+  - name: sb-demo
+    newName: sb-demo
+    newTag: latest
+
+# Additional generators
+generators: []
+
+# Transformers
+transformers: []
+
+# Validators
+validators: []

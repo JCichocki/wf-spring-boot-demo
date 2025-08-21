@@ -1,0 +1,47 @@
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: sb-demo
+  labels:
+    app: sb-demo
+    app.kubernetes.io/name: sb-demo
+    app.kubernetes.io/component: imagestream
+    app.kubernetes.io/part-of: sb-demo-platform
+    app.kubernetes.io/version: "1.0.0"
+  annotations:
+    openshift.io/display-name: "Spring Boot Demo"
+    openshift.io/description: "Spring Boot demo application image stream"
+spec:
+  lookupPolicy:
+    local: true
+  tags:
+    - name: latest
+      annotations:
+        openshift.io/display-name: "Latest (latest)"
+        description: "Latest version of the Spring Boot demo application"
+        iconClass: icon-spring
+        tags: "spring-boot,java,demo"
+        supports: "java:17"
+        version: "latest"
+      from:
+        kind: DockerImage
+        name: "sb-demo:latest"
+      generation: 1
+      importPolicy:
+        scheduled: false
+      referencePolicy:
+        type: Local
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: sb-demo-imagestream-secret
+  labels:
+    app: sb-demo
+    app.kubernetes.io/name: sb-demo
+    app.kubernetes.io/component: imagestream-secret
+    app.kubernetes.io/part-of: sb-demo-platform
+  annotations:
+    kubernetes.io/service-account.name: sb-demo
+    kubernetes.io/service-account.uid: ""
+type: kubernetes.io/service-account-token

@@ -1,0 +1,219 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: oc-deploy
+  labels:
+    app.kubernetes.io/version: "0.2"
+  annotations:
+    tekton.dev/pipelines.minVersion: "0.17.0"
+    tekton.dev/categories: Deployment
+    tekton.dev/tags: deploy
+    tekton.dev/displayName: "OpenShift Deploy"
+    tekton.dev/platforms: "linux/amd64"
+spec:
+  description: >-
+    This task performs deployment operations using the OpenShift CLI (oc).
+    It can deploy applications, update images, and manage OpenShift resources.
+  params:
+    - name: SCRIPT
+      description: The OpenShift CLI commands to execute
+      type: string
+      default: "oc version"
+    - name: VERSION
+      description: The OpenShift CLI version to use
+      type: string
+      default: "4.16"
+    - name: IMAGE
+      description: The application image to deploy
+      type: string
+      default: ""
+    - name: DEPLOYMENT_NAME
+      description: Name of the deployment to update
+      type: string
+      default: "sb-demo"
+    - name: NAMESPACE
+      description: The namespace to deploy to
+      type: string
+      default: ""
+    - name: MANIFEST_DIR
+      description: Directory containing Kubernetes/OpenShift manifests
+      type: string
+      default: "k8s"
+  workspaces:
+    - name: source
+      description: Workspace containing the application source and manifests
+    - name: kubeconfig-dir
+      description: >-
+        An optional workspace that allows providing a .kube/config
+        file for KubeConfig access. When this is provided, we skip the service account
+        setup and use the provided kubeconfig.
+      optional: true
+  steps:
+    - name: deploy
+      image: registry.redhat.io/openshift4/ose-cli:v4.16
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+        
+        # Set up kubeconfig if provided
+        if [ "$(workspaces.kubeconfig-dir.bound)" = "true" ] ; then
+          [[ -f $(workspaces.kubeconfig-dir.path)/kubeconfig ]] && \
+          export KUBECONFIG=$(workspaces.kubeconfig-dir.path)/kubeconfig
+          
+          [[ -f $(workspaces.kubeconfig-dir.path)/config ]] && \
+          export KUBECONFIG=$(workspaces.kubeconfig-dir.path)/config
+        fi
+        
+        # Create default manifests if they don't exist
+        if [ ! -d "$(params.MANIFEST_DIR)" ]; then
+          echo "Creating default Kubernetes manifests..."
+          mkdir -p $(params.MANIFEST_DIR)
+          
+          # Create Deployment manifest
+          cat > $(params.MANIFEST_DIR)/deployment.yaml <<EOF
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: $(params.DEPLOYMENT_NAME)
+          labels:
+            app: $(params.DEPLOYMENT_NAME)
+            app.kubernetes.io/name: $(params.DEPLOYMENT_NAME)
+            app.kubernetes.io/component: backend
+            app.kubernetes.io/part-of: $(params.DEPLOYMENT_NAME)
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: $(params.DEPLOYMENT_NAME)
+          template:
+            metadata:
+              labels:
+                app: $(params.DEPLOYMENT_NAME)
+            spec:
+              containers:
+              - name: $(params.DEPLOYMENT_NAME)
+                image: $(params.IMAGE)
+                ports:
+                - containerPort: 8080
+                  protocol: TCP
+                env:
+                - name: SPRING_PROFILES_ACTIVE
+                  value: "prod"
+                livenessProbe:
+                  httpGet:
+                    path: /actuator/health
+                    port: 8080
+                  initialDelaySeconds: 30
+                  timeoutSeconds: 3
+                  periodSeconds: 10
+                  failureThreshold: 3
+                readinessProbe:
+                  httpGet:
+                    path: /actuator/health
+                    port: 8080
+                  initialDelaySeconds: 5
+                  timeoutSeconds: 3
+                  periodSeconds: 5
+                  failureThreshold: 3
+                resources:
+                  limits:
+                    memory: "1Gi"
+                    cpu: "500m"
+                  requests:
+                    memory: "512Mi"
+                    cpu: "250m"
+        EOF
+          
+          # Create Service manifest
+          cat > $(params.MANIFEST_DIR)/service.yaml <<EOF
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: $(params.DEPLOYMENT_NAME)
+          labels:
+            app: $(params.DEPLOYMENT_NAME)
+            app.kubernetes.io/name: $(params.DEPLOYMENT_NAME)
+            app.kubernetes.io/component: backend
+            app.kubernetes.io/part-of: $(params.DEPLOYMENT_NAME)
+        spec:
+          selector:
+            app: $(params.DEPLOYMENT_NAME)
+          ports:
+          - name: http
+            port: 8080
+            targetPort: 8080
+            protocol: TCP
+          type: ClusterIP
+        EOF
+          
+          # Create Route manifest
+          cat > $(params.MANIFEST_DIR)/route.yaml <<EOF
+        apiVersion: route.openshift.io/v1
+        kind: Route
+        metadata:
+          name: $(params.DEPLOYMENT_NAME)
+          labels:
+            app: $(params.DEPLOYMENT_NAME)
+            app.kubernetes.io/name: $(params.DEPLOYMENT_NAME)
+            app.kubernetes.io/component: backend
+            app.kubernetes.io/part-of: $(params.DEPLOYMENT_NAME)
+        spec:
+          to:
+            kind: Service
+            name: $(params.DEPLOYMENT_NAME)
+          port:
+            targetPort: http
+          tls:
+            termination: edge
+            insecureEdgeTerminationPolicy: Redirect
+        EOF
+          
+          echo "Default manifests created in $(params.MANIFEST_DIR)/"
+        fi
+        
+        # Set namespace if provided
+        if [ -n "$(params.NAMESPACE)" ]; then
+          echo "Setting namespace to $(params.NAMESPACE)"
+          oc project $(params.NAMESPACE) || oc new-project $(params.NAMESPACE)
+        fi
+        
+        # Update image in deployment if image parameter is provided
+        if [ -n "$(params.IMAGE)" ] && [ -f "$(params.MANIFEST_DIR)/deployment.yaml" ]; then
+          echo "Updating deployment image to $(params.IMAGE)"
+          sed -i "s|image: .*|image: $(params.IMAGE)|" $(params.MANIFEST_DIR)/deployment.yaml
+        fi
+        
+        # Execute the provided script or default deployment
+        if [ "$(params.SCRIPT)" != "oc version" ]; then
+          echo "Executing custom script:"
+          echo "$(params.SCRIPT)"
+          echo "---"
+          eval "$(params.SCRIPT)"
+        else
+          echo "Deploying application using manifests..."
+          
+          # Apply all manifests
+          if [ -d "$(params.MANIFEST_DIR)" ]; then
+            echo "Applying manifests from $(params.MANIFEST_DIR)/"
+            oc apply -f $(params.MANIFEST_DIR)/
+            
+            # Wait for deployment to be ready
+            echo "Waiting for deployment to be ready..."
+            oc rollout status deployment/$(params.DEPLOYMENT_NAME) --timeout=300s
+            
+            # Show deployment status
+            echo "Deployment status:"
+            oc get deployment $(params.DEPLOYMENT_NAME)
+            oc get pods -l app=$(params.DEPLOYMENT_NAME)
+            
+            # Show route if it exists
+            if oc get route $(params.DEPLOYMENT_NAME) >/dev/null 2>&1; then
+              echo "Application route:"
+              oc get route $(params.DEPLOYMENT_NAME) -o jsonpath='{.spec.host}' && echo
+            fi
+          else
+            echo "No manifests directory found, running version check only"
+            oc version
+          fi
+        fi

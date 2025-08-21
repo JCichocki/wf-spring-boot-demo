@@ -16,7 +16,6 @@
             <div class="container">
                 <nav class="navbar navbar-light navbar-expand-md">
                     <a th:href="@{/}" class="navbar-brand">
-                        <img th:src="@{/images/logo.png}" th:alt="#{app.title}" width="30" height="30" class="d-inline-block align-top" />
                         <span class="ps-1">[[#{app.title}]]</span>
                     </a>
                     <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbarToggle"
@@ -33,6 +32,7 @@
                                         aria-expanded="false">[[#{navigation.entities}]]</button>
                                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarEntitiesLink">
                                     <li><a th:href="@{/uploads}" class="dropdown-item">[[#{upload.list.headline}]]</a></li>
+                                    <li><a th:href="@{/feeds}" class="dropdown-item">[[#{feed.list.headline}]]</a></li>
                                 </ul>
                             </li>
                         </ul>

@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sb-demo-uploads
+  labels:
+    app: sb-demo
+    app.kubernetes.io/name: sb-demo
+    app.kubernetes.io/component: storage
+    app.kubernetes.io/part-of: sb-demo-platform
+    app.kubernetes.io/version: "1.0.0"
+  annotations:
+    volume.kubernetes.io/storage-provisioner: kubernetes.io/no-provisioner
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: ""
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sb-demo-database
+  labels:
+    app: sb-demo
+    app.kubernetes.io/name: sb-demo
+    app.kubernetes.io/component: database-storage
+    app.kubernetes.io/part-of: sb-demo-platform
+    app.kubernetes.io/version: "1.0.0"
+  annotations:
+    volume.kubernetes.io/storage-provisioner: kubernetes.io/no-provisioner
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: ""

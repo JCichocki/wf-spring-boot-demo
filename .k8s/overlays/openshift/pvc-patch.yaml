@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sb-demo-uploads
+  annotations:
+    # Use OpenShift default storage class
+    volume.kubernetes.io/storage-provisioner: ""
+spec:
+  # Remove empty storageClassName to use default
+  storageClassName: null
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sb-demo-database
+  annotations:
+    # Use OpenShift default storage class
+    volume.kubernetes.io/storage-provisioner: ""
+spec:
+  # Remove empty storageClassName to use default
+  storageClassName: null

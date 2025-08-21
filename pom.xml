@@ -94,6 +94,14 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>com.konghq</groupId>
+            <artifactId>unirest-java-core</artifactId>
+            <version>4.5.0</version>
+            <scope>provided</scope>
+        </dependency>
+
     </dependencies>
 
     <build>

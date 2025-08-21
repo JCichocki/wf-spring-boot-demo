@@ -1,0 +1,75 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: sb-demo-triggertemplate
+  labels:
+    app.kubernetes.io/name: sb-demo
+    app.kubernetes.io/component: triggers
+spec:
+  params:
+    - name: git-repo-url
+      description: The git repository url
+    - name: git-revision
+      description: The git revision (commit SHA)
+      default: "main"
+    - name: git-repo-name
+      description: The name of the deployment to be created / patched
+      default: "sb-demo"
+    - name: git-commit-message
+      description: The commit message
+      default: ""
+    - name: git-commit-author
+      description: The commit author
+      default: ""
+    - name: git-branch-name
+      description: The git branch name
+      default: "refs/heads/main"
+    - name: pr-number
+      description: Pull request number (for PR builds)
+      default: ""
+    - name: pr-action
+      description: Pull request action (for PR builds)
+      default: ""
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        generateName: sb-demo-pipeline-run-
+        labels:
+          app.kubernetes.io/name: sb-demo
+          app.kubernetes.io/component: pipeline-run
+          tekton.dev/pipeline: sb-demo-pipeline
+          git.repo: $(tt.params.git-repo-name)
+          git.branch: $(tt.params.git-branch-name)
+          git.commit: $(tt.params.git-revision)
+        annotations:
+          tekton.dev/git-repo: $(tt.params.git-repo-url)
+          tekton.dev/git-revision: $(tt.params.git-revision)
+          tekton.dev/git-commit-message: $(tt.params.git-commit-message)
+          tekton.dev/git-commit-author: $(tt.params.git-commit-author)
+          tekton.dev/pr-number: $(tt.params.pr-number)
+      spec:
+        serviceAccountName: sb-demo-pipeline-sa
+        pipelineRef:
+          name: sb-demo-pipeline
+        params:
+          - name: repo-url
+            value: $(tt.params.git-repo-url)
+          - name: repo-revision
+            value: $(tt.params.git-revision)
+          - name: image-name
+            value: "image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/$(tt.params.git-repo-name)"
+          - name: image-tag
+            value: "$(tt.params.git-revision)"
+          - name: deployment-name
+            value: $(tt.params.git-repo-name)
+          - name: target-namespace
+            value: $(context.pipelineRun.namespace)
+        workspaces:
+          - name: shared-data
+            persistentVolumeClaim:
+              claimName: sb-demo-workspace-pvc
+          - name: maven-local-repo
+            persistentVolumeClaim:
+              claimName: sb-demo-maven-repo-pvc
+        timeout: "1h0m0s"

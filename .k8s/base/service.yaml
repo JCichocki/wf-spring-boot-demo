@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: sb-demo
+  labels:
+    app: sb-demo
+    app.kubernetes.io/name: sb-demo
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: sb-demo-platform
+    app.kubernetes.io/version: "1.0.0"
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: nlb
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: http
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP
+  selector:
+    app: sb-demo
+  sessionAffinity: None
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sb-demo-headless
+  labels:
+    app: sb-demo
+    app.kubernetes.io/name: sb-demo
+    app.kubernetes.io/component: backend-headless
+    app.kubernetes.io/part-of: sb-demo-platform
+    app.kubernetes.io/version: "1.0.0"
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP
+  selector:
+    app: sb-demo
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sb-demo
+  labels:
+    app: sb-demo
+    app.kubernetes.io/name: sb-demo
+    app.kubernetes.io/component: service-account
+    app.kubernetes.io/part-of: sb-demo-platform
+    app.kubernetes.io/version: "1.0.0"
+automountServiceAccountToken: false

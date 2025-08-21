@@ -34,6 +34,10 @@ error:
 springdoc:
   pathsToMatch: /api/**
 
+app:
+  data:
+    initialize: ${APP_DATA_INITIALIZE:true}
+
 management:
   endpoints:
     web:

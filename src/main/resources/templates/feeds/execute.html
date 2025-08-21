@@ -1,0 +1,242 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+        layout:decorate="~{layout}">
+    <head>
+        <title>[[#{feed.execute.headline}]]</title>
+    </head>
+    <body>
+        <div layout:fragment="content">
+            <div class="d-flex flex-wrap mb-4">
+                <h1 class="flex-grow-1">[[#{feed.execute.headline}]]</h1>
+                <div>
+                    <a th:href="@{/feeds}" class="btn btn-secondary ms-2">[[#{feed.execute.back}]]</a>
+                </div>
+            </div>
+            
+            <!-- Feed Information -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">[[${feed.name}]]</h5>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>[[#{feed.type.label}]]:</strong> [[${feed.type}]]
+                        </div>
+                        <div class="col-md-3">
+                            <strong>[[#{feed.status.label}]]:</strong> [[${feed.status}]]
+                        </div>
+                        <div class="col-md-6" th:if="${feed.lastRun}">
+                            <strong>[[#{feed.lastRun.label}]]:</strong> [[${feed.lastRun}]]
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Execution Form -->
+            <div th:replace="~{fragments/forms::globalErrors('execution')}" />
+            <form th:action="${requestUri}" method="post" novalidate="">
+                <div class="row mb-3">
+                    <label for="parameters" class="col-md-2 col-form-label">
+                        <span>[[#{feed.execute.parameters.label}]]</span>
+                    </label>
+                    <div class="col-md-10">
+                        <textarea th:field="*{execution.parameters}" class="form-control" id="parameters" 
+                                  rows="4" placeholder="Enter execution parameters (optional)"></textarea>
+                        <div class="form-text">[[#{feed.execute.parameters.help}]]</div>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-10 offset-md-2">
+                        <button type="submit" class="btn btn-success">[[#{feed.execute.submit}]]</button>
+                        <a th:href="@{/feeds}" class="btn btn-secondary ms-2">[[#{feed.execute.back}]]</a>
+                    </div>
+                </div>
+            </form>
+            
+            <!-- Execution Results with Stages -->
+            <div class="mt-4" th:if="${executionResult}">
+                
+                <!-- Overall Summary Card -->
+                <div class="card mb-3 execution-summary">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">[[#{feed.execute.stages.overall}]]</h5>
+                        <span class="badge" 
+                              th:text="${executionResult.status.name()}">STATUS</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <div class="card-text">
+                                    <strong>[[#{feed.execute.results.startTime}]]:</strong><br>
+                                    <span th:text="${#temporals.format(executionResult.startTime, 'HH:mm:ss')}">Start Time</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4" th:if="${executionResult.endTime}">
+                                <div class="card-text">
+                                    <strong>[[#{feed.execute.results.endTime}]]:</strong><br>
+                                    <span th:text="${#temporals.format(executionResult.endTime, 'HH:mm:ss')}">End Time</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card-text">
+                                    <strong>[[#{feed.execute.stages.duration}]]:</strong><br>
+                                    <span th:text="${executionResult.durationMillis}">0</span>ms
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Progress Bar -->
+                        <div class="stages-progress mb-2" th:if="${!executionResult.stages.empty}">
+                            <div class="stages-progress-bar" 
+                                 th:style="'width: ' + ${(#lists.size(executionResult.stages) > 0 ? (#lists.size(executionResult.stages.?[status.name() == 'SUCCESS']) * 100.0 / #lists.size(executionResult.stages)) : 0)} + '%'"></div>
+                        </div>
+                        <small class="card-text">
+                            Stages: <span th:text="${#lists.size(executionResult.stages.?[status.name() == 'SUCCESS'])}">0</span>/<span th:text="${#lists.size(executionResult.stages)}">0</span> completed
+                        </small>
+                        
+                        <div class="alert alert-danger mt-3 mb-0" th:if="${executionResult.error}">
+                            <strong>Error:</strong> <span th:text="${executionResult.error}">Error message</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Stage Progress Timeline -->
+                <div class="stage-timeline" th:if="${!executionResult.stages.empty}">
+                    <div class="stage-item" th:each="stage : ${executionResult.stages}">
+                        <div class="stage-icon" 
+                             th:classappend="${stage.status.name() == 'SUCCESS'} ? 'stage-success' : 
+                                            (${stage.status.name() == 'FAILED'} ? 'stage-failed' : 
+                                            (${stage.status.name() == 'IN_PROGRESS'} ? 'stage-progress' : 'stage-pending'))">
+                            <i th:class="${stage.status.name() == 'SUCCESS'} ? 'fas fa-check' : 
+                                        (${stage.status.name() == 'FAILED'} ? 'fas fa-times' : 
+                                        (${stage.status.name() == 'IN_PROGRESS'} ? 'fas fa-spinner' : 'fas fa-clock'))"></i>
+                        </div>
+                        <div class="stage-name" th:text="${stage.name}">Stage Name</div>
+                    </div>
+                </div>
+                
+                <!-- Stages Accordion -->
+                <div class="accordion stage-accordion" id="stagesAccordion" th:if="${!executionResult.stages.empty}">
+                    <div class="accordion-item" th:each="stage, iterStat : ${executionResult.stages}">
+                        <h2 class="accordion-header" th:id="'heading' + ${iterStat.index}">
+                            <button class="accordion-button" 
+                                    th:classappend="${stage.status.name() == 'FAILED'} ? '' : 'collapsed'"
+                                    type="button" 
+                                    data-bs-toggle="collapse" 
+                                    th:data-bs-target="'#collapse' + ${iterStat.index}" 
+                                    th:aria-controls="'collapse' + ${iterStat.index}">
+                                <div class="stage-collapsed-info w-100">
+                                    <div class="stage-icon stage-icon-sm me-2" 
+                                         th:classappend="${stage.status.name() == 'SUCCESS'} ? 'stage-success' : 
+                                                        (${stage.status.name() == 'FAILED'} ? 'stage-failed' : 
+                                                        (${stage.status.name() == 'IN_PROGRESS'} ? 'stage-progress' : 'stage-pending'))">
+                                        <i th:class="${stage.status.name() == 'SUCCESS'} ? 'fas fa-check' : 
+                                                    (${stage.status.name() == 'FAILED'} ? 'fas fa-times' : 
+                                                    (${stage.status.name() == 'IN_PROGRESS'} ? 'fas fa-spinner' : 'fas fa-clock'))"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <strong th:text="${stage.name}">Stage Name</strong>
+                                        <small class="d-block text-muted" th:text="${stage.description}">Stage Description</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge stage-status-badge"
+                                              th:classappend="${stage.status.name() == 'SUCCESS'} ? 'bg-success' : 
+                                                             (${stage.status.name() == 'FAILED'} ? 'bg-danger' : 
+                                                             (${stage.status.name() == 'IN_PROGRESS'} ? 'bg-warning text-dark' : 'bg-secondary'))"
+                                              th:text="${stage.status.name()}">STATUS</span>
+                                        <span class="stage-duration" th:if="${stage.durationMillis > 0}">
+                                            (<span th:text="${stage.durationMillis}">0</span>ms)
+                                        </span>
+                                    </div>
+                                </div>
+                            </button>
+                        </h2>
+                        <div th:id="'collapse' + ${iterStat.index}" 
+                             class="accordion-collapse collapse"
+                             th:classappend="${stage.status.name() == 'FAILED'} ? 'show' : ''"
+                             th:data-bs-parent="'#stagesAccordion'">
+                            <div class="accordion-body">
+                                
+                                <!-- Stage Error Alert -->
+                                <div class="alert alert-danger" th:if="${stage.error}">
+                                    <strong>Stage Failed:</strong> <span th:text="${stage.error}">Error message</span>
+                                </div>
+                                
+                                <!-- Stage Parameters -->
+                                <div class="row" th:if="${!stage.parameters.empty}">
+                                    <div class="col-md-6 mb-3">
+                                        <h6>[[#{feed.execute.stages.parameters}]]</h6>
+                                        <table class="table table-sm stage-params-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Parameter</th>
+                                                    <th>Value</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr th:each="stageParam : ${stage.parameters}">
+                                                    <td th:text="${stageParam.key}">Key</td>
+                                                    <td th:text="${stageParam.value}">Value</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <h6>Stage Timing</h6>
+                                        <table class="table table-sm">
+                                            <tbody>
+                                                <tr th:if="${stage.startTime}">
+                                                    <td><strong>Started:</strong></td>
+                                                    <td th:text="${#temporals.format(stage.startTime, 'HH:mm:ss.SSS')}">Start Time</td>
+                                                </tr>
+                                                <tr th:if="${stage.endTime}">
+                                                    <td><strong>Completed:</strong></td>
+                                                    <td th:text="${#temporals.format(stage.endTime, 'HH:mm:ss.SSS')}">End Time</td>
+                                                </tr>
+                                                <tr th:if="${stage.durationMillis > 0}">
+                                                    <td><strong>Duration:</strong></td>
+                                                    <td><span th:text="${stage.durationMillis}">0</span>ms</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                
+                                <div th:if="${stage.parameters.empty}" class="alert alert-info">
+                                    [[#{feed.execute.stages.noParams}]]
+                                </div>
+                                
+                                <!-- Stage Logs -->
+                                <h6>[[#{feed.execute.stages.logs}]]</h6>
+                                <div class="stage-logs">
+                                    <pre th:text="${stage.logsAsString}" class="mb-0">Stage logs will appear here...</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Overall Logs (Collapsible) -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <button class="btn btn-sm btn-outline-secondary" 
+                                type="button"
+                                data-bs-toggle="collapse" 
+                                data-bs-target="#overallLogs" 
+                                aria-expanded="false">
+                            <i class="fas fa-list-alt me-1"></i>
+                            Show Overall Logs
+                        </button>
+                    </div>
+                    <div id="overallLogs" class="collapse">
+                        <div class="card-body">
+                            <div class="bg-dark text-light p-3 rounded" style="height: 300px; overflow-y: auto; font-family: monospace;">
+                                <pre th:text="${executionResult.logsAsString}" class="mb-0 text-light">Overall execution logs will appear here...</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

@@ -1,0 +1,90 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: sb-demo-tekton
+  annotations:
+    description: "Tekton CI/CD pipeline for Spring Boot Demo application"
+
+# Common labels applied to all resources
+commonLabels:
+  app.kubernetes.io/name: sb-demo
+  app.kubernetes.io/version: "1.0.0"
+  app.kubernetes.io/managed-by: tekton
+  app.kubernetes.io/part-of: sb-demo-platform
+
+# Resources to include in the deployment
+resources:
+  # Core pipeline components
+  - pipeline.yaml
+  - pvc.yaml
+  - rbac.yaml
+  
+  # Tasks
+  - tasks/git-clone.yaml
+  - tasks/maven-build.yaml
+  - tasks/maven-test.yaml
+  - tasks/buildah-build.yaml
+  - tasks/oc-deploy.yaml
+  
+  # Triggers
+  - triggers/eventlistener.yaml
+  - triggers/triggerbinding.yaml
+  - triggers/triggertemplate.yaml
+
+# Namespace to deploy resources to (can be overridden)
+namespace: sb-demo-pipelines
+
+# Additional configurations
+configurations:
+  - name: tekton-config
+    behavior: merge
+
+# Patches for environment-specific customizations
+patchesStrategicMerge:
+  # Uncomment and customize for different environments
+  # - overlays/development/pipeline-patch.yaml
+  # - overlays/staging/pipeline-patch.yaml
+  # - overlays/production/pipeline-patch.yaml
+
+# ConfigMap and Secret generators
+configMapGenerator:
+  - name: pipeline-config
+    literals:
+      - MAVEN_GOALS_BUILD=clean,package,-DskipTests=true
+      - MAVEN_GOALS_TEST=test
+      - DEFAULT_IMAGE_TAG=latest
+      - PIPELINE_TIMEOUT=1h0m0s
+
+# Image transformations (for different registry endpoints)
+images:
+  - name: registry.access.redhat.com/ubi8/openjdk-17
+    newTag: "1.20"
+  - name: registry.redhat.io/rhel8/buildah
+    newTag: "latest"
+  - name: registry.redhat.io/openshift4/ose-cli
+    newTag: "v4.16"
+
+# Replacements for environment-specific values
+replacements:
+  - source:
+      kind: ConfigMap
+      name: pipeline-config
+      fieldPath: data.DEFAULT_IMAGE_TAG
+    targets:
+      - select:
+          kind: Pipeline
+          name: sb-demo-pipeline
+        fieldPaths:
+          - spec.params.[name=image-tag].default
+  
+  - source:
+      kind: ConfigMap
+      name: pipeline-config
+      fieldPath: data.PIPELINE_TIMEOUT
+    targets:
+      - select:
+          kind: TriggerTemplate
+          name: sb-demo-triggertemplate
+        fieldPaths:
+          - spec.resourcetemplates.[kind=PipelineRun].spec.timeout

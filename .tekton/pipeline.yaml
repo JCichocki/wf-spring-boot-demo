@@ -1,0 +1,217 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: sb-demo-pipeline
+  labels:
+    app.kubernetes.io/name: sb-demo
+    app.kubernetes.io/component: pipeline
+  annotations:
+    tekton.dev/pipelines.minVersion: "0.17.0"
+    tekton.dev/categories: CI/CD
+    tekton.dev/tags: ci-cd
+    tekton.dev/displayName: "Spring Boot Demo CI/CD Pipeline"
+spec:
+  description: >-
+    This pipeline builds, tests, and deploys the Spring Boot demo application.
+    It includes source code checkout, Maven build and test, container image build,
+    and deployment to OpenShift.
+  params:
+    - name: repo-url
+      type: string
+      description: The git repository URL to clone from.
+      default: "https://github.com/your-org/wf-spring-boot-demo.git"
+    - name: repo-revision
+      type: string
+      description: The git branch, tag, or SHA to checkout.
+      default: "main"
+    - name: image-name
+      type: string
+      description: The name of the image to build
+      default: "image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/sb-demo"
+    - name: image-tag
+      type: string
+      description: The tag to apply to the built image
+      default: "latest"
+    - name: deployment-name
+      type: string
+      description: Name of the deployment to update
+      default: "sb-demo"
+    - name: target-namespace
+      type: string
+      description: The namespace to deploy the application to
+      default: ""
+    - name: maven-goals-build
+      type: array
+      description: Maven goals for building the application
+      default:
+        - "clean"
+        - "package"
+        - "-DskipTests=true"
+    - name: maven-goals-test
+      type: array
+      description: Maven goals for testing the application
+      default:
+        - "test"
+  workspaces:
+    - name: shared-data
+      description: >-
+        This workspace contains the cloned repo files, so they can be read by the
+        next task.
+    - name: maven-settings
+      description: >-
+        This workspace contains the custom maven settings provided by the user.
+      optional: true
+    - name: maven-local-repo
+      description: >-
+        This workspace is used for Maven local repository caching across tasks.
+      optional: true
+    - name: dockerconfig-secret
+      description: >-
+        This workspace contains the Docker config.json for registry authentication.
+      optional: true
+  tasks:
+    - name: fetch-source
+      taskRef:
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: shared-data
+      params:
+        - name: url
+          value: $(params.repo-url)
+        - name: revision
+          value: $(params.repo-revision)
+        - name: deleteExisting
+          value: "true"
+        - name: verbose
+          value: "true"
+    
+    - name: test
+      taskRef:
+        name: maven-test
+      runAfter:
+        - fetch-source
+      workspaces:
+        - name: source
+          workspace: shared-data
+        - name: maven-settings
+          workspace: maven-settings
+        - name: maven-local-repo
+          workspace: maven-local-repo
+      params:
+        - name: GOALS
+          value: $(params.maven-goals-test)
+        - name: CONTEXT_DIR
+          value: "."
+    
+    - name: build
+      taskRef:
+        name: maven-build
+      runAfter:
+        - test
+      workspaces:
+        - name: source
+          workspace: shared-data
+        - name: maven-settings
+          workspace: maven-settings
+        - name: maven-local-repo
+          workspace: maven-local-repo
+      params:
+        - name: GOALS
+          value: $(params.maven-goals-build)
+        - name: CONTEXT_DIR
+          value: "."
+    
+    - name: build-image
+      taskRef:
+        name: buildah-build
+      runAfter:
+        - build
+      workspaces:
+        - name: source
+          workspace: shared-data
+        - name: dockerconfig
+          workspace: dockerconfig-secret
+      params:
+        - name: IMAGE
+          value: "$(params.image-name):$(params.image-tag)"
+        - name: CONTEXT
+          value: "."
+        - name: DOCKERFILE
+          value: "Dockerfile"
+        - name: TLSVERIFY
+          value: "false"
+        - name: FORMAT
+          value: "docker"
+    
+    - name: deploy
+      taskRef:
+        name: oc-deploy
+      runAfter:
+        - build-image
+      workspaces:
+        - name: source
+          workspace: shared-data
+      params:
+        - name: IMAGE
+          value: "$(params.image-name):$(params.image-tag)"
+        - name: DEPLOYMENT_NAME
+          value: $(params.deployment-name)
+        - name: NAMESPACE
+          value: $(params.target-namespace)
+        - name: SCRIPT
+          value: |
+            # Deploy using the default manifests approach
+            echo "Deploying $(params.deployment-name) with image $(params.image-name):$(params.image-tag)"
+            
+            # Apply manifests (oc-deploy task will create defaults if none exist)
+            oc apply -f k8s/ || echo "Using default manifests created by task"
+            
+            # Update the deployment image
+            oc set image deployment/$(params.deployment-name) \
+              $(params.deployment-name)=$(params.image-name):$(params.image-tag)
+            
+            # Wait for rollout to complete
+            oc rollout status deployment/$(params.deployment-name) --timeout=300s
+            
+            # Display deployment info
+            echo "=== Deployment Status ==="
+            oc get deployment $(params.deployment-name)
+            oc get pods -l app=$(params.deployment-name)
+            
+            # Show route if available
+            if oc get route $(params.deployment-name) >/dev/null 2>&1; then
+              echo "=== Application Route ==="
+              echo "https://$(oc get route $(params.deployment-name) -o jsonpath='{.spec.host}')"
+            fi
+  
+  results:
+    - name: commit-sha
+      description: The commit SHA that was built
+      value: $(tasks.fetch-source.results.commit)
+    - name: image-digest
+      description: Digest of the built image
+      value: $(tasks.build-image.results.IMAGE_DIGEST)
+    - name: image-url
+      description: URL of the built image
+      value: $(tasks.build-image.results.IMAGE_URL)
+  
+  finally:
+    - name: cleanup
+      taskRef:
+        name: oc-deploy
+      workspaces:
+        - name: source
+          workspace: shared-data
+      params:
+        - name: SCRIPT
+          value: |
+            echo "=== Pipeline Execution Summary ==="
+            echo "Repository: $(params.repo-url)"
+            echo "Revision: $(params.repo-revision)"
+            echo "Commit SHA: $(tasks.fetch-source.results.commit)"
+            echo "Image: $(params.image-name):$(params.image-tag)"
+            echo "Image Digest: $(tasks.build-image.results.IMAGE_DIGEST)"
+            echo "Deployment: $(params.deployment-name)"
+            echo "Namespace: $(params.target-namespace)"
+            echo "Pipeline completed successfully! ✅"
