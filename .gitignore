@@ -7,6 +7,12 @@ application-local.yml
 *.log
 .DS_Store
 
+## k8s/openshift
+.k8s/
+.tekton/
+.claude/
+
+
 ## IntelliJ IDEA
 .idea
 *.iws
