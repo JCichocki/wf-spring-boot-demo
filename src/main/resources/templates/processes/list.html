@@ -1,0 +1,256 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+        layout:decorate="~{layout}">
+    <head>
+        <title>[[#{process.list.headline}]]</title>
+    </head>
+    <body>
+        <div layout:fragment="content">
+            <!-- Page Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+                <div>
+                    <h4 class="fw-bold py-3 mb-1">
+                        <span class="text-muted fw-light">Dashboard / Processes /</span> [[#{process.list.headline}]]
+                    </h4>
+                    <p class="text-muted mb-0">[[#{process.list.description}]]</p>
+                </div>
+                <div class="btn-toolbar" role="toolbar">
+                    <a th:href="@{/processes}" class="btn btn-outline-secondary me-2">
+                        <i class="bx bx-arrow-back me-1"></i>[[#{process.list.back}]]
+                    </a>
+                    <button type="button" class="btn btn-primary">
+                        <i class="bx bx-plus me-1"></i>[[#{process.list.createNew}]]
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filters and Search -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="search" class="form-label">[[#{process.filter.search}]]</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bx bx-search"></i></span>
+                                <input type="text" class="form-control" id="search" placeholder="[[#{process.filter.searchPlaceholder}]]">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="status" class="form-label">[[#{process.filter.status}]]</label>
+                            <select class="form-select" id="status">
+                                <option value="">[[#{process.filter.allStatuses}]]</option>
+                                <option value="running">[[#{process.status.running}]]</option>
+                                <option value="completed">[[#{process.status.completed}]]</option>
+                                <option value="failed">[[#{process.status.failed}]]</option>
+                                <option value="paused">[[#{process.status.paused}]]</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="dateRange" class="form-label">[[#{process.filter.dateRange}]]</label>
+                            <select class="form-select" id="dateRange">
+                                <option value="">[[#{process.filter.allDates}]]</option>
+                                <option value="today">[[#{process.filter.today}]]</option>
+                                <option value="week">[[#{process.filter.thisWeek}]]</option>
+                                <option value="month">[[#{process.filter.thisMonth}]]</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="button" class="btn btn-outline-secondary w-100">
+                                <i class="bx bx-filter me-1"></i>[[#{process.filter.apply}]]
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Process List -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">[[#{process.list.headline}]]</h5>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary">
+                            <i class="bx bx-export me-1"></i>[[#{process.list.export}]]
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary">
+                            <i class="bx bx-refresh me-1"></i>[[#{process.list.refresh}]]
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Process Count -->
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <small class="text-muted">[[#{process.list.showing}]] 1-10 [[#{process.list.of}]] 47 [[#{process.list.results}]]</small>
+                        <div class="d-flex align-items-center gap-2">
+                            <label for="pageSize" class="form-label mb-0 small">[[#{process.list.show}]]:</label>
+                            <select class="form-select form-select-sm" id="pageSize" style="width: auto;">
+                                <option value="10">10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Table -->
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        <input type="checkbox" class="form-check-input">
+                                    </th>
+                                    <th>[[#{process.table.name}]]</th>
+                                    <th>[[#{process.table.type}]]</th>
+                                    <th>[[#{process.table.status}]]</th>
+                                    <th>[[#{process.table.startTime}]]</th>
+                                    <th>[[#{process.table.duration}]]</th>
+                                    <th>[[#{process.table.progress}]]</th>
+                                    <th>[[#{process.table.actions}]]</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><input type="checkbox" class="form-check-input"></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <i class="bx bx-cog me-2 text-primary"></i>
+                                            <div>
+                                                <div class="fw-semibold">Data Processing Job</div>
+                                                <small class="text-muted">Process ID: 12345</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge bg-label-info">Batch</span></td>
+                                    <td><span class="badge bg-success">[[#{process.status.running}]]</span></td>
+                                    <td>
+                                        <div>Nov 15, 2024</div>
+                                        <small class="text-muted">2:30 PM</small>
+                                    </td>
+                                    <td>45m 23s</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress me-2" style="width: 60px; height: 6px;">
+                                                <div class="progress-bar" role="progressbar" style="width: 75%"></div>
+                                            </div>
+                                            <small>75%</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                [[#{process.actions.menu}]]
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item" href="#"><i class="bx bx-show me-1"></i>[[#{process.actions.view}]]</a></li>
+                                                <li><a class="dropdown-item" href="#"><i class="bx bx-pause me-1"></i>[[#{process.actions.pause}]]</a></li>
+                                                <li><a class="dropdown-item text-danger" href="#"><i class="bx bx-stop me-1"></i>[[#{process.actions.stop}]]</a></li>
+                                            </ul>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><input type="checkbox" class="form-check-input"></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <i class="bx bx-upload me-2 text-info"></i>
+                                            <div>
+                                                <div class="fw-semibold">File Upload Process</div>
+                                                <small class="text-muted">Process ID: 12344</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge bg-label-primary">Upload</span></td>
+                                    <td><span class="badge bg-primary">[[#{process.status.completed}]]</span></td>
+                                    <td>
+                                        <div>Nov 15, 2024</div>
+                                        <small class="text-muted">12:15 PM</small>
+                                    </td>
+                                    <td>12m 45s</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress me-2" style="width: 60px; height: 6px;">
+                                                <div class="progress-bar bg-success" role="progressbar" style="width: 100%"></div>
+                                            </div>
+                                            <small>100%</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                [[#{process.actions.menu}]]
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item" href="#"><i class="bx bx-show me-1"></i>[[#{process.actions.view}]]</a></li>
+                                                <li><a class="dropdown-item" href="#"><i class="bx bx-download me-1"></i>[[#{process.actions.download}]]</a></li>
+                                                <li><a class="dropdown-item" href="#"><i class="bx bx-copy me-1"></i>[[#{process.actions.duplicate}]]</a></li>
+                                            </ul>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><input type="checkbox" class="form-check-input"></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <i class="bx bx-error me-2 text-danger"></i>
+                                            <div>
+                                                <div class="fw-semibold">Validation Service</div>
+                                                <small class="text-muted">Process ID: 12343</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge bg-label-warning">Validation</span></td>
+                                    <td><span class="badge bg-danger">[[#{process.status.failed}]]</span></td>
+                                    <td>
+                                        <div>Nov 14, 2024</div>
+                                        <small class="text-muted">4:22 PM</small>
+                                    </td>
+                                    <td>5m 12s</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress me-2" style="width: 60px; height: 6px;">
+                                                <div class="progress-bar bg-danger" role="progressbar" style="width: 30%"></div>
+                                            </div>
+                                            <small>30%</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                [[#{process.actions.menu}]]
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item" href="#"><i class="bx bx-show me-1"></i>[[#{process.actions.view}]]</a></li>
+                                                <li><a class="dropdown-item" href="#"><i class="bx bx-refresh me-1"></i>[[#{process.actions.retry}]]</a></li>
+                                                <li><a class="dropdown-item" href="#"><i class="bx bx-bug me-1"></i>[[#{process.actions.debug}]]</a></li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li><a class="dropdown-item text-danger" href="#"><i class="bx bx-trash me-1"></i>[[#{process.actions.delete}]]</a></li>
+                                            </ul>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <nav aria-label="Process pagination">
+                        <ul class="pagination pagination-sm justify-content-center mt-4">
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" tabindex="-1" aria-disabled="true">
+                                    <i class="bx bx-chevron-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                            <li class="page-item"><a class="page-link" href="#">2</a></li>
+                            <li class="page-item"><a class="page-link" href="#">3</a></li>
+                            <li class="page-item">
+                                <a class="page-link" href="#">
+                                    <i class="bx bx-chevron-right"></i>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
