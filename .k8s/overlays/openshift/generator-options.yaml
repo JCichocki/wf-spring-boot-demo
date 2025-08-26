@@ -1,7 +1,0 @@
-apiVersion: builtin
-kind: ConfigMapGenerator
-metadata:
-  name: sb-demo-openshift-generator
-options:
-  disableNameSuffixHash: true
-literals: []

@@ -1,0 +1,219 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+        layout:decorate="~{layout}">
+    <head>
+        <title>[[#{feed.history.headline}]] - [[${feed.name}]]</title>
+    </head>
+    <body>
+        <div layout:fragment="content">
+            <div class="d-flex flex-wrap mb-4">
+                <h1 class="flex-grow-1">[[#{feed.history.headline}]] - [[${feed.name}]]</h1>
+                <div>
+                    <a th:href="@{/feeds/{id}/execute(id=${feed.id})}" class="btn btn-success ms-2">[[#{feed.list.execute}]]</a>
+                    <a th:href="@{/feeds}" class="btn btn-secondary ms-2">[[#{feed.history.back}]]</a>
+                </div>
+            </div>
+            
+            <!-- Statistics Cards -->
+            <div class="row mb-4" th:if="${stats}">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title mb-1">[[#{feed.history.totalExecutions}]]</h6>
+                                    <h3 class="mb-0" th:text="${stats.totalExecutions}">0</h3>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-play-circle fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title mb-1">[[#{feed.history.successRate}]]</h6>
+                                    <h3 class="mb-0"><span th:text="${#numbers.formatDecimal(stats.successRate, 1, 1)}">0</span>%</h3>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-check-circle fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title mb-1">[[#{feed.history.averageDuration}]]</h6>
+                                    <h3 class="mb-0" th:if="${stats.averageDurationMillis}">
+                                        <span th:text="${#numbers.formatDecimal(stats.averageDurationMillis / 1000, 1, 1)}">0</span>s
+                                    </h3>
+                                    <h3 class="mb-0" th:unless="${stats.averageDurationMillis}">N/A</h3>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-clock fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-danger text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title mb-1">[[#{feed.history.failedExecutions}]]</h6>
+                                    <h3 class="mb-0" th:text="${stats.failedExecutions}">0</h3>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-times-circle fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Execution History Table -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">[[#{feed.history.executionList}]]</h5>
+                </div>
+                <div class="card-body">
+                    <div th:if="${executions.empty}" class="text-center text-muted py-4">
+                        <i class="fas fa-history fa-3x mb-3"></i>
+                        <p>[[#{feed.history.empty}]]</p>
+                        <a th:href="@{/feeds/{id}/execute(id=${feed.id})}" class="btn btn-primary">
+                            [[#{feed.history.runFirst}]]
+                        </a>
+                    </div>
+                    
+                    <div th:if="${!executions.empty}" class="table-responsive">
+                        <table class="table table-striped table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th scope="col">[[#{feed.history.executionId}]]</th>
+                                    <th scope="col">[[#{feed.history.status}]]</th>
+                                    <th scope="col">[[#{feed.history.startTime}]]</th>
+                                    <th scope="col">[[#{feed.history.duration}]]</th>
+                                    <th scope="col">[[#{feed.history.parameters}]]</th>
+                                    <th scope="col">[[#{feed.history.actions}]]</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="execution : ${executions}">
+                                    <td>
+                                        <a th:href="@{/feeds/{feedId}/history/{executionId}(feedId=${feed.id}, executionId=${execution.id})}" 
+                                           class="text-decoration-none fw-bold">
+                                            #[[${execution.id}]]
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="badge" th:classappend="${execution.statusClass}" 
+                                              th:text="${execution.status}">STATUS</span>
+                                    </td>
+                                    <td>
+                                        <div th:text="${#temporals.format(execution.startTime, 'MMM dd, yyyy HH:mm:ss')}">Start Time</div>
+                                        <small class="text-muted" th:text="${#temporals.format(execution.startTime, 'EEEE')}">Day</small>
+                                    </td>
+                                    <td>
+                                        <span th:text="${execution.durationFormatted}">Duration</span>
+                                        <div th:if="${execution.endTime}" class="small text-muted">
+                                            [[#{feed.history.endedAt}]] [[${#temporals.format(execution.endTime, 'HH:mm:ss')}]]
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div th:if="${execution.parameters}" class="execution-parameters">
+                                            <code class="small" th:text="${#strings.abbreviate(execution.parameters, 50)}">Parameters</code>
+                                        </div>
+                                        <div th:unless="${execution.parameters}" class="text-muted small">
+                                            [[#{feed.history.noParameters}]]
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a th:href="@{/feeds/{feedId}/history/{executionId}(feedId=${feed.id}, executionId=${execution.id})}" 
+                                               class="btn btn-outline-primary" title="[[#{feed.history.viewDetails}]]">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-secondary" 
+                                                    th:if="${execution.parameters}"
+                                                    th:onclick="'copyParameters(' + ${execution.id} + ')'"
+                                                    title="[[#{feed.history.copyParameters}]]">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                            <a th:href="@{/feeds/{id}/execute(id=${feed.id})}" 
+                                               class="btn btn-outline-success" title="[[#{feed.history.rerun}]]">
+                                                <i class="fas fa-redo"></i>
+                                            </a>
+                                        </div>
+                                        
+                                        <!-- Hidden parameters for copying -->
+                                        <input type="hidden" th:if="${execution.parameters}" 
+                                               th:id="'params-' + ${execution.id}" 
+                                               th:value="${execution.parameters}">
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- JavaScript for parameter copying -->
+        <script layout:fragment="scripts">
+            function copyParameters(executionId) {
+                const paramsInput = document.getElementById('params-' + executionId);
+                if (paramsInput) {
+                    navigator.clipboard.writeText(paramsInput.value).then(function() {
+                        // Show toast notification
+                        showToast('Parameters copied to clipboard!');
+                    }).catch(function(err) {
+                        console.error('Failed to copy: ', err);
+                        // Fallback for older browsers
+                        paramsInput.select();
+                        document.execCommand('copy');
+                        showToast('Parameters copied to clipboard!');
+                    });
+                }
+            }
+            
+            function showToast(message) {
+                // Create a simple toast notification
+                const toast = document.createElement('div');
+                toast.className = 'toast-notification';
+                toast.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: #28a745;
+                    color: white;
+                    padding: 12px 20px;
+                    border-radius: 4px;
+                    z-index: 1050;
+                    opacity: 0;
+                    transition: opacity 0.3s ease;
+                `;
+                toast.textContent = message;
+                document.body.appendChild(toast);
+                
+                // Fade in
+                setTimeout(() => { toast.style.opacity = '1'; }, 10);
+                
+                // Fade out and remove
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    setTimeout(() => document.body.removeChild(toast), 300);
+                }, 2000);
+            }
+        </script>
+    </body>
+</html>

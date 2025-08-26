@@ -35,6 +35,7 @@
                             <td>
                                 <div class="float-end text-nowrap">
                                     <a th:href="@{/feeds/execute/{id}(id=${feed.id})}" class="btn btn-sm btn-success">[[#{feed.list.execute}]]</a>
+                                    <a th:href="@{/feeds/{id}/history(id=${feed.id})}" class="btn btn-sm btn-info">[[#{feed.list.history}]]</a>
                                     <a th:href="@{/feeds/edit/{id}(id=${feed.id})}" class="btn btn-sm btn-secondary">[[#{feed.list.edit}]]</a>
                                     <form th:action="@{/feeds/delete/{id}(id=${feed.id})}"
                                             th:hx-confirm="#{delete.confirm}" method="post" class="d-inline">

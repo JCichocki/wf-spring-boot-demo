@@ -1,3 +1,9 @@
+/* Full Width Layout Adjustments */
+.container-fluid {
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
 /* Stage Timeline Styles */
 .stage-timeline {
     display: flex;
@@ -201,4 +207,153 @@
     .stage-icon {
         margin-bottom: 0;
     }
+}
+
+/* Execution History Styles */
+.execution-parameters {
+    max-width: 300px;
+    overflow: hidden;
+}
+
+.execution-parameters code {
+    background-color: #f8f9fa;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 0.8em;
+}
+
+.execution-logs-container {
+    height: 300px;
+    overflow-y: auto;
+    font-family: 'Courier New', Consolas, monospace;
+    font-size: 0.9em;
+}
+
+.execution-logs-scroll {
+    min-height: 100%;
+}
+
+/* History Statistics Cards */
+.card.bg-primary,
+.card.bg-success,
+.card.bg-info,
+.card.bg-danger {
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card.bg-primary .card-body,
+.card.bg-success .card-body,
+.card.bg-info .card-body,
+.card.bg-danger .card-body {
+    padding: 1.25rem;
+}
+
+.card.bg-primary h3,
+.card.bg-success h3,
+.card.bg-info h3,
+.card.bg-danger h3 {
+    font-weight: 700;
+    margin-bottom: 0;
+}
+
+.card.bg-primary .card-title,
+.card.bg-success .card-title,
+.card.bg-info .card-title,
+.card.bg-danger .card-title {
+    font-size: 0.875rem;
+    font-weight: 500;
+    opacity: 0.9;
+}
+
+/* History Table Styles */
+.table th {
+    border-top: none;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.table td {
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0,123,255,0.05);
+}
+
+/* Status Badge Styling */
+.badge.bg-success {
+    background-color: #28a745 !important;
+}
+
+.badge.bg-danger {
+    background-color: #dc3545 !important;
+}
+
+.badge.bg-warning {
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+}
+
+.badge.bg-secondary {
+    background-color: #6c757d !important;
+}
+
+/* Button Group Spacing */
+.btn-group-sm .btn {
+    margin-right: 2px;
+}
+
+.btn-group-sm .btn:last-child {
+    margin-right: 0;
+}
+
+/* Toast Notification */
+.toast-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #28a745;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 4px;
+    z-index: 1050;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    font-weight: 500;
+}
+
+/* Execution ID Link Styling */
+a.text-decoration-none.fw-bold {
+    color: #0066cc;
+    transition: color 0.2s ease;
+}
+
+a.text-decoration-none.fw-bold:hover {
+    color: #004499;
+    text-decoration: underline !important;
+}
+
+/* Duration Formatting */
+.small.text-muted {
+    font-size: 0.8em;
+}
+
+/* Empty State Styling */
+.text-center.text-muted.py-4 {
+    padding: 3rem !important;
+}
+
+.text-center.text-muted.py-4 i {
+    color: #adb5bd;
+}
+
+.text-center.text-muted.py-4 p {
+    font-size: 1.1em;
+    color: #6c757d;
+    margin-bottom: 1.5rem;
 }
